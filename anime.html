@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anime</title><link rel="stylesheet" href="/detail.css"></head>
+<body><header><a href="/" class="back">← Kembali</a></header><main id="app"><p class="muted">Memuat...</p></main>
+<script>
+const id=new URLSearchParams(location.search).get("id");
+const API="https://graphql.anilist.co";
+const q=`query($id:Int){Media(id:$id,type:ANIME){id title{romaji english native}description(asHtml:false)coverImage{extraLarge}bannerImage episodes status averageScore genres seasonYear format streamingEpisodes{title thumbnail url site}relations{edges{relationType node{id title{romaji english}coverImage{medium}}}}}}`;
+const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+(async()=>{try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:q,variables:{id:Number(id)}})});const j=await r.json();const a=j.data.Media;document.title=a.title.english||a.title.romaji;
+document.querySelector("#app").innerHTML=`<section class="detail"><img class="cover" src="${a.coverImage.extraLarge}" alt=""><div><p class="eyebrow">${a.format||""} · ${a.status||""}</p><h1>${esc(a.title.english||a.title.romaji)}</h1><p class="alt">${esc(a.title.romaji||"")}</p><div class="tags">${(a.genres||[]).map(x=>`<span>${esc(x)}</span>`).join("")}</div><p class="desc">${esc(a.description||"Sinopsis tidak tersedia.")}</p><p class="meta">⭐ ${a.averageScore? (a.averageScore/10).toFixed(1):"—"} · ${a.episodes||"?"} episode · ${a.seasonYear||"—"}</p></div></section>
+<section><h2>Episode / Streaming Resmi</h2><div class="episodes">${(a.streamingEpisodes||[]).length?(a.streamingEpisodes.map((e,i)=>`<a class="ep" target="_blank" rel="noopener" href="${esc(e.url)}"><b>Episode ${i+1}</b><span>${esc(e.site||"Official streaming")}</span></a>`).join("")):`<p class="muted">AniList tidak menyediakan link streaming untuk judul ini.</p>`}</div></section>`}catch(e){document.querySelector("#app").innerHTML="<p class='muted'>Gagal memuat anime.</p>"}})();
+</script></body></html>
