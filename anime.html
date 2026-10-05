@@ -68,7 +68,7 @@ function safeDescription(html){
 
     const title = a.title.english || a.title.romaji || a.title.native || "Untitled";
     const originalDescription = safeDescription(a.description);
-    const genres = (a.genres || []).map(x=>`<a class="genre-tag" href="/?genre=${encodeURIComponent(x)}" title="Lihat anime genre ${esc(x)}">${esc(x)}</a>`).join("");
+    const genres = (a.genres || []).map(x=>`<a class="genre-tag" href="/genre.html?name=${encodeURIComponent(x)}" title="Lihat anime genre ${esc(x)}">${esc(x)}</a>`).join("");
     const links = (a.streamingEpisodes || []).map((e,i)=>
       `<a class="ep" target="_blank" rel="noopener noreferrer" href="${esc(e.url)}">
         <b>Episode ${i+1}</b><span>${esc(e.site || "Streaming resmi")}</span>

@@ -1,17 +1,16 @@
-# Nazuaf Anime — Cloudflare Pages Starter
+# Nazuaf Anime V5.3
 
-Starter website anime berbasis AniList API.
+Perbaikan dari V5.2:
+- Genre pada halaman detail sekarang tampil sebagai pill/chip yang lebih terang dan menarik, bukan link biru bawaan browser.
+- Setiap genre diarahkan ke `genre.html?name=...` agar halaman genre terpisah dan tidak tercampur dengan halaman trending.
+- Halaman genre memakai filter AniList berdasarkan genre yang dipilih.
+- Ada validasi tambahan di browser: kartu hanya ditampilkan jika data anime benar-benar memiliki genre yang dipilih.
+- Pencarian tetap tersedia dari halaman genre.
+- Fitur terjemahan sinopsis Google Translate gratis dan perbaikan V5.1 tetap dipertahankan.
 
-## Deploy ke Cloudflare Pages
-1. Upload folder ini ke GitHub.
-2. Cloudflare Dashboard → Workers & Pages → Create → Pages → Connect to Git.
-3. Framework preset: None.
-4. Build command: kosong.
-5. Build output directory: `/` (atau root repository).
-6. Deploy.
+## Deploy
+Upload semua file V5.3 ke repository GitHub dan commit. Cloudflare Pages akan melakukan deploy otomatis.
 
-## Catatan
-Website ini mengambil metadata dari AniList dan hanya menampilkan tautan streaming yang diberikan oleh AniList (`streamingEpisodes`).
-Tidak ada video berhak cipta yang disimpan di project ini.
-
-Untuk video milik sendiri/berlisensi, halaman player dapat ditambahkan kemudian dengan HLS.js + Cloudflare Stream/R2.
+File tambahan:
+- `genre.html`
+- `genre.js`
