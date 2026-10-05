@@ -1,13 +1,149 @@
 <!doctype html>
-<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Anime</title><link rel="stylesheet" href="/detail.css"></head>
-<body><header><a href="/" class="back">← Kembali</a></header><main id="app"><p class="muted">Memuat...</p></main>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#08090b">
+<title>Anime</title>
+<link rel="stylesheet" href="/detail.css">
+</head>
+<body>
+<header><a href="/" class="back">← Kembali</a></header>
+<main id="app"><p class="muted">Memuat...</p></main>
+<footer class="site-footer"><a href="https://nazuaf.com" target="_blank" rel="noopener">© Nazuaf.com 2026</a></footer>
+
 <script>
-const id=new URLSearchParams(location.search).get("id");
-const API="https://graphql.anilist.co";
-const q=`query($id:Int){Media(id:$id,type:ANIME){id title{romaji english native}description(asHtml:false)coverImage{extraLarge}bannerImage episodes status averageScore genres seasonYear format streamingEpisodes{title thumbnail url site}relations{edges{relationType node{id title{romaji english}coverImage{medium}}}}}}`;
-const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-(async()=>{try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query:q,variables:{id:Number(id)}})});const j=await r.json();const a=j.data.Media;document.title=a.title.english||a.title.romaji;
-document.querySelector("#app").innerHTML=`<section class="detail"><img class="cover" src="${a.coverImage.extraLarge}" alt=""><div><p class="eyebrow">${a.format||""} · ${a.status||""}</p><h1>${esc(a.title.english||a.title.romaji)}</h1><p class="alt">${esc(a.title.romaji||"")}</p><div class="tags">${(a.genres||[]).map(x=>`<span>${esc(x)}</span>`).join("")}</div><p class="desc">${esc(a.description||"Sinopsis tidak tersedia.")}</p><p class="meta">⭐ ${a.averageScore? (a.averageScore/10).toFixed(1):"—"} · ${a.episodes||"?"} episode · ${a.seasonYear||"—"}</p></div></section>
-<section><h2>Episode / Streaming Resmi</h2><div class="episodes">${(a.streamingEpisodes||[]).length?(a.streamingEpisodes.map((e,i)=>`<a class="ep" target="_blank" rel="noopener" href="${esc(e.url)}"><b>Episode ${i+1}</b><span>${esc(e.site||"Official streaming")}</span></a>`).join("")):`<p class="muted">AniList tidak menyediakan link streaming untuk judul ini.</p>`}</div></section>`}catch(e){document.querySelector("#app").innerHTML="<p class='muted'>Gagal memuat anime.</p>"}})();
-</script><footer class="site-footer"><a href="https://nazuaf.com" target="_blank" rel="noopener">© Nazuaf.com 2026</a></footer>
-</body></html>
+const id = new URLSearchParams(location.search).get("id");
+const API = "https://graphql.anilist.co";
+
+const query = `query($id:Int){
+  Media(id:$id,type:ANIME){
+    id
+    title{romaji english native}
+    description(asHtml:true)
+    coverImage{extraLarge}
+    episodes status averageScore genres seasonYear format
+    streamingEpisodes{title thumbnail url site}
+  }
+}`;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+}[c]));
+
+function safeDescription(html){
+  // AniList descriptions may contain simple HTML such as <br>, <i>, <b>.
+  // Keep only harmless formatting tags and strip attributes from them.
+  const template = document.createElement("template");
+  template.innerHTML = String(html || "Sinopsis tidak tersedia.");
+
+  const allowed = new Set(["BR","I","EM","B","STRONG","P","UL","OL","LI"]);
+  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
+  const nodes = [];
+  while(walker.nextNode()) nodes.push(walker.currentNode);
+
+  for(const el of nodes){
+    if(!allowed.has(el.tagName)){
+      el.replaceWith(document.createTextNode(el.textContent || ""));
+      continue;
+    }
+    [...el.attributes].forEach(a => el.removeAttribute(a.name));
+  }
+  return template.innerHTML;
+}
+
+(async()=>{
+  try{
+    const r = await fetch(API,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({query,variables:{id:Number(id)}})
+    });
+    if(!r.ok) throw Error("AniList request failed");
+    const j = await r.json();
+    if(j.errors) throw Error(j.errors[0]?.message || "GraphQL error");
+
+    const a = j.data.Media;
+    document.title = `${a.title.english || a.title.romaji || "Anime"} — Nazuaf Anime`;
+
+    const title = a.title.english || a.title.romaji || a.title.native || "Untitled";
+    const originalDescription = safeDescription(a.description);
+    const genres = (a.genres || []).map(x=>`<span>${esc(x)}</span>`).join("");
+    const links = (a.streamingEpisodes || []).map((e,i)=>
+      `<a class="ep" target="_blank" rel="noopener noreferrer" href="${esc(e.url)}">
+        <b>Episode ${i+1}</b><span>${esc(e.site || "Streaming resmi")}</span>
+      </a>`
+    ).join("");
+
+    document.querySelector("#app").innerHTML = `
+      <section class="detail">
+        <img class="cover" src="${esc(a.coverImage?.extraLarge || "")}" alt="${esc(title)}">
+        <div>
+          <p class="eyebrow">${esc(a.format || "")} · ${esc(a.status || "")}</p>
+          <h1>${esc(title)}</h1>
+          <p class="alt">${esc(a.title.romaji || "")}</p>
+          <div class="tags">${genres}</div>
+          <div class="desc" id="description">${originalDescription}</div>
+          <button class="translate-btn" id="translateBtn" type="button">🇮🇩 Menerjemahkan sinopsis…</button>
+          <p class="meta">⭐ ${a.averageScore ? (a.averageScore/10).toFixed(1) : "—"} · ${a.episodes || "?"} episode · ${a.seasonYear || "—"}</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Episode / Streaming Resmi</h2>
+        <div class="episodes">
+          ${links || `<p class="muted">AniList tidak menyediakan tautan streaming untuk judul ini.</p>`}
+        </div>
+      </section>`;
+
+      const translateBtn = document.querySelector("#translateBtn");
+      const descriptionBox = document.querySelector("#description");
+      const sourceText = descriptionBox.textContent.trim();
+
+      async function translateToIndonesian(text){
+        if(!text) return "Sinopsis tidak tersedia.";
+        const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=id&dt=t&q=" + encodeURIComponent(text);
+        const response = await fetch(url);
+        if(!response.ok) throw new Error("Google Translate request failed");
+        const data = await response.json();
+        return (data?.[0] || []).map(part => part?.[0] || "").join("").trim();
+      }
+
+      if(sourceText){
+        try{
+          const translated = await translateToIndonesian(sourceText);
+          if(translated){
+            descriptionBox.textContent = translated;
+            translateBtn.textContent = "✓ Sinopsis diterjemahkan ke Indonesia";
+            translateBtn.disabled = true;
+          } else {
+            throw new Error("Empty translation");
+          }
+        }catch(err){
+          // Keep the original AniList synopsis if translation is unavailable.
+          translateBtn.textContent = "🇮🇩 Terjemahkan sinopsis";
+          translateBtn.addEventListener("click", async()=>{
+            translateBtn.disabled = true;
+            translateBtn.textContent = "Menerjemahkan…";
+            try{
+              const translated = await translateToIndonesian(sourceText);
+              descriptionBox.textContent = translated || sourceText;
+              translateBtn.textContent = translated ? "✓ Sinopsis diterjemahkan ke Indonesia" : "Terjemahan tidak tersedia";
+            }catch(e){
+              translateBtn.disabled = false;
+              translateBtn.textContent = "🇮🇩 Coba terjemahkan lagi";
+            }
+          }, {once:false});
+        }
+      } else {
+        translateBtn.textContent = "Sinopsis tidak tersedia";
+        translateBtn.disabled = true;
+      }
+  }catch(e){
+    document.querySelector("#app").innerHTML =
+      `<p class="muted">Gagal memuat data anime.</p>`;
+  }
+})();
+</script>
+</body>
+</html>
