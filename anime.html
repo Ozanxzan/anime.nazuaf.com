@@ -68,7 +68,7 @@ function safeDescription(html){
 
     const title = a.title.english || a.title.romaji || a.title.native || "Untitled";
     const originalDescription = safeDescription(a.description);
-    const genres = (a.genres || []).map(x=>`<span>${esc(x)}</span>`).join("");
+    const genres = (a.genres || []).map(x=>`<a class="genre-tag" href="/?genre=${encodeURIComponent(x)}" title="Lihat anime genre ${esc(x)}">${esc(x)}</a>`).join("");
     const links = (a.streamingEpisodes || []).map((e,i)=>
       `<a class="ep" target="_blank" rel="noopener noreferrer" href="${esc(e.url)}">
         <b>Episode ${i+1}</b><span>${esc(e.site || "Streaming resmi")}</span>
@@ -82,10 +82,13 @@ function safeDescription(html){
           <p class="eyebrow">${esc(a.format || "")} · ${esc(a.status || "")}</p>
           <h1>${esc(title)}</h1>
           <p class="alt">${esc(a.title.romaji || "")}</p>
-          <div class="tags">${genres}</div>
+          <p class="meta">⭐ ${a.averageScore ? (a.averageScore/10).toFixed(1) : "—"} · ${a.episodes || "?"} episode · ${a.seasonYear || "—"}</p>
+          <div class="genre-box">
+            <div class="genre-title">GENRE</div>
+            <div class="tags">${genres || '<span>Belum tersedia</span>'}</div>
+          </div>
           <div class="desc" id="description">${originalDescription}</div>
           <button class="translate-btn" id="translateBtn" type="button">🇮🇩 Menerjemahkan sinopsis…</button>
-          <p class="meta">⭐ ${a.averageScore ? (a.averageScore/10).toFixed(1) : "—"} · ${a.episodes || "?"} episode · ${a.seasonYear || "—"}</p>
         </div>
       </section>
 
